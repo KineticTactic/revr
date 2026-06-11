@@ -1,6 +1,6 @@
-#include "http.h"
+#include "revr/http.h"
 
-#include "uri.h"
+#include "revr/uri.h"
 
 #include <stdio.h>
 #include <stdlib.h>

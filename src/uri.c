@@ -1,4 +1,4 @@
-#include "uri.h"
+#include "revr/uri.h"
 
 #include <stdbool.h>
 #include <string.h>
