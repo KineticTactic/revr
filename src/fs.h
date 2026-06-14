@@ -2,7 +2,7 @@
 
 #include <stddef.h>
 
-typedef struct {
+typedef struct file_content {
 	void* content;
 	const char* content_type;
 	size_t content_length;

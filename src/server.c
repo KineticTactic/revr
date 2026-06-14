@@ -1,6 +1,8 @@
-#include "revr/server.h"
-#include "revr/fs.h"
-#include "revr/http.h"
+#include "server.h"
+#include "fs.h"
+#include "http.h"
+#include "internal.h"
+#include "route.h"
 
 #include <arpa/inet.h>
 #include <limits.h>
@@ -37,7 +39,7 @@ void server_free_addr_info(struct addrinfo *servinfo) {
 	freeaddrinfo(servinfo);
 }
 
-void server_create_and_bind_socket(struct addrinfo *servinfo, server *server) {
+int server_create_and_bind_socket(struct addrinfo *servinfo) {
 	// loop through all the results and bind to the first one which we can
 	int sockfd;
 	struct addrinfo *p;
@@ -73,12 +75,12 @@ void server_create_and_bind_socket(struct addrinfo *servinfo, server *server) {
 		exit(1);
 	}
 
-	server->sockfd = sockfd;
+	return sockfd;
 }
 
-void server_listen(server *server, int backlog) {
+void server_listen(int sockfd, int backlog) {
 	// Start listening. Accept at most BACKLOG connections on this socket.
-	if (listen(server->sockfd, backlog) == -1) {
+	if (listen(sockfd, backlog) == -1) {
 		perror("listen");
 		exit(1);
 	}
@@ -92,44 +94,42 @@ void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
-int server_handle_request(const http_request *req, http_response *res,
-                          server *server) {
-	if (req->method != GET) {
-		res->status_code = 501;
-		res->body = "Not Implemented";
-		res->content_type = "text/plain";
-		res->content_length = strlen(res->body);
-		res->owns_body = false;
-		return 0;
-	}
+// int server_handle_request(const RevrHttpRequest *req, RevrHttpResponse *res) {
+// 	if (req->method != GET) {
+// 		res->status_code = 501;
+// 		res->body = "Not Implemented";
+// 		res->content_type = "text/plain";
+// 		res->content_length = strlen(res->body);
+// 		res->owns_body = false;
+// 		return 0;
+// 	}
+//
+// 	file_content content;
+// 	char fullpath[PATH_MAX];
+// 	snprintf(fullpath, PATH_MAX, "%s%s", server->rootdir, req->path);
+//
+// 	if (fs_getpath(fullpath, &content) != 0) {
+// 		res->status_code = 404;
+// 		res->body = "Not Found";
+// 		res->content_type = "text/plain";
+// 		res->content_length = strlen(res->body);
+// 		res->owns_body = false;
+// 		return 0;
+// 	}
+//
+// 	res->status_code = 200;
+// 	res->body = content.content;
+// 	res->content_type = content.content_type;
+// 	res->content_length = content.content_length;
+// 	res->owns_body = true;
+//
+// 	return 0;
+// }
 
-	file_content content;
-	char fullpath[PATH_MAX];
-	snprintf(fullpath, PATH_MAX, "%s%s", server->rootdir, req->path);
-
-	if (fs_getpath(fullpath, &content) != 0) {
-		res->status_code = 404;
-		res->body = "Not Found";
-		res->content_type = "text/plain";
-		res->content_length = strlen(res->body);
-		res->owns_body = false;
-		return 0;
-	}
-
-	res->status_code = 200;
-	res->body = content.content;
-	res->content_type = content.content_type;
-	res->content_length = content.content_length;
-	res->owns_body = true;
-
-	return 0;
-}
-
-void server_accept_connection(server *server) {
+void server_accept_connection(RevrApp* app, int sockfd) {
 	struct sockaddr_storage their_addr;
 	socklen_t addr_size = sizeof their_addr;
-	int new_fd =
-	    accept(server->sockfd, (struct sockaddr *)&their_addr, &addr_size);
+	int new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
 
 	if (new_fd == -1) {
 		perror("accept");
@@ -142,17 +142,17 @@ void server_accept_connection(server *server) {
 	printf("server: got connection from %s\n", s);
 
 	if (!fork()) {
-		close(server->sockfd);
+		close(sockfd);
 
 		// Receive message
 		char request_str[1024];
 		recv(new_fd, request_str, 1024, 0);
 		printf("Received: \n%s\n", request_str);
 
-		http_request req;
+		RevrRequest req;
 		int status = http_parse_request(request_str, &req);
 
-		http_response res;
+		RevrResponse res;
 		if (status == -1) {
 			res.status_code = 400;
 			res.content_type = "text/plain";
@@ -160,7 +160,7 @@ void server_accept_connection(server *server) {
 			res.content_length = strlen(res.body);
 			res.owns_body = false;
 		} else {
-			server_handle_request(&req, &res, server);
+			route_dispatch(app, &req, &res);
 		}
 
 		char *response_str = http_generate_response(&res);
@@ -183,8 +183,9 @@ void server_accept_connection(server *server) {
 
 		free(response_str);
 
+		// TODO: THink about this.
 		if (res.owns_body) {
-			free(res.body);
+			free((void*) res.body);
 		}
 
 		if (bytes_sent == -1)

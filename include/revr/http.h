@@ -4,12 +4,12 @@
 #include <stdbool.h>
 #include <limits.h>
 
-typedef enum { UNKNOWN, GET, POST, HEAD } http_method;
+typedef enum { UNKNOWN, GET, POST, HEAD } RevrHttpMethod;
 typedef struct {
-	http_method method;
+	RevrHttpMethod method;
 	char path[PATH_MAX];
 	char* version;
-} http_request;
+} RevrHttpRequest;
 
 typedef struct {
 	int status_code;
@@ -18,7 +18,7 @@ typedef struct {
 	void* body;
 
 	bool owns_body;
-} http_response;
+} RevrHttpResponse;
 
-int http_parse_request(char* req, http_request* request);
-char* http_generate_response(const http_response* response);
+int http_parse_request(char* req, RevrHttpRequest* request);
+char* http_generate_response(const RevrHttpResponse* response);

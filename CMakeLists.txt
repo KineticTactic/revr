@@ -13,6 +13,8 @@ add_library(revr STATIC
     src/http.c
     src/uri.c
     src/fs.c
+    src/revr.c
+    src/route.c
 )
 target_include_directories(revr
     PUBLIC
@@ -25,6 +27,10 @@ set_target_properties(revr PROPERTIES
 
 add_executable(static-server examples/static_server.c)
 target_link_libraries(static-server PRIVATE revr)
+
+add_executable(helloworld examples/helloworld.c)
+target_link_libraries(helloworld PRIVATE revr)
+
 install(TARGETS revr static-server
     EXPORT  revr-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

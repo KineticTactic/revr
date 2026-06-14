@@ -1,6 +1,26 @@
-# revr
+# Revr
 
-Express.js-inspired HTTP framework for C.
+A lightweight and ergonomic framework for building HTTP servers in C.
+
+## Demo
+
+```c
+#include "revr/revr.h"
+
+void hello(RevrRequest *req, RevrResponse *res) {
+    revr_send_text(res, 200, "Hello, World!");
+}
+
+int main() {
+    RevrApp *app = revr_app_create();
+
+    revr_get(app, "/hello", hello);
+    revr_static(app, "/", "./public");
+
+    revr_listen(app, "3490");
+    revr_app_free(app);
+}
+```
 
 ## Build
 
@@ -10,16 +30,23 @@ cmake -S . -B build -G Ninja
 cmake --build build
 ```
 
-Build a specific example:
+Build examples:
 
 ```sh
-cmake --build build --target static-server
+cmake --build build --target helloworld
+cmake --build build --target static-website
 ```
 
 ## Examples
 
 ```sh
-./build/static-server examples/static_website
+# Hello World + static file server
+./build/helloworld
+# -> http://localhost:3490/hello
+# -> http://localhost:3490/index.html
+
+# Static file server only
+./build/static_website
 # -> http://localhost:3490
 ```
 

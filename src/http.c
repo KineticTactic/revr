@@ -1,6 +1,8 @@
-#include "revr/http.h"
+#include "http.h"
 
-#include "revr/uri.h"
+#include "fs.h"
+#include "internal.h"
+#include "uri.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +19,7 @@ int http_parse_method(const char *method) {
 	return UNKNOWN;
 }
 
-int http_parse_request(char *raw, http_request *request) {
+int http_parse_request(char *raw, RevrRequest *request) {
 	char *line_ptr;
 	char *field_ptr;
 
@@ -27,11 +29,13 @@ int http_parse_request(char *raw, http_request *request) {
 	char *path = strtok_r(NULL, " ", &field_ptr);
 	char *version = strtok_r(NULL, " ", &field_ptr);
 
-	if (method == NULL || path == NULL || version == NULL || (strcmp(version, "HTTP/1.0") != 0 && strcmp(version, "HTTP/1.1") != 0)) {
+	if (method == NULL || path == NULL || version == NULL ||
+	    (strcmp(version, "HTTP/1.0") != 0 &&
+	     strcmp(version, "HTTP/1.1") != 0)) {
 		return -1;
 	}
 
-	char* query = strchr(path, '?');
+	char *query = strchr(path, '?');
 	if (query) {
 		*query = '\0';
 		query++;
@@ -50,7 +54,7 @@ int http_parse_request(char *raw, http_request *request) {
 	return 0;
 }
 
-char *http_generate_response(const http_response *response) {
+char *http_generate_response(const RevrResponse *response) {
 	const char *reason = response->status_code == 200 ? "OK" : response->body;
 
 	size_t capacity = sizeof(char) * 512;
@@ -64,4 +68,34 @@ char *http_generate_response(const http_response *response) {
 	         response->content_length);
 
 	return response_str;
+}
+
+void http_send_file(RevrResponse *res, file_content *content) {
+	res->status_code = 200;
+	res->body = content->content;
+	res->content_type = content->content_type;
+	res->content_length = content->content_length;
+	res->owns_body = true;
+}
+
+void http_404(RevrResponse *res) {
+	res->status_code = 404;
+	res->body = "Not Found";
+	res->owns_body = false;
+	res->content_type = "text/plain";
+	res->content_length = strlen(res->body);
+}
+void http_method_not_allowed(RevrResponse *res) {
+	res->status_code = 405;
+	res->body = "Method Not Allowed";
+	res->owns_body = false;
+	res->content_type = "text/plain";
+	res->content_length = strlen(res->body);
+}
+void http_not_implemented(RevrResponse *res) {
+	res->status_code = 501;
+	res->body = "Not Implemented";
+	res->owns_body = false;
+	res->content_type = "text/plain";
+	res->content_length = strlen(res->body);
 }
