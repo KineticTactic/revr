@@ -56,9 +56,7 @@ void route_dispatch(RevrApp *app, RevrRequest *req, RevrResponse *res) {
 		return route->handler(req, res);
 	}
 
-	if (req->method == POST) {
-		return http_method_not_allowed(res);
-	} else if (req->method == UNKNOWN) {
+	if (req->method == UNKNOWN) {
 		return http_not_implemented(res);
 	}
 
@@ -69,9 +67,12 @@ void route_dispatch(RevrApp *app, RevrRequest *req, RevrResponse *res) {
 		snprintf(fullpath, PATH_MAX, "%s%s",
 		         app->static_mounts.items[i].directory, req->path);
 
-		if (fs_getpath(fullpath, &content) == 0) {
-			return http_send_file(res, &content);
-		}
+		if (fs_getpath(fullpath, &content) != 0)
+			continue;
+		if (req->method != GET || req->method != HEAD)
+			return http_method_not_allowed(res);
+
+		return http_send_file(res, &content);
 	}
 
 	return http_not_found(res);

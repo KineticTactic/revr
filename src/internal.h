@@ -30,18 +30,32 @@ typedef struct {
 } StaticMounts;
 
 typedef enum { UNKNOWN, GET, POST, HEAD } HttpMethod;
+
+typedef struct Header {
+	char* name;
+	char* value;
+} Header;
+
+typedef struct {
+	Header* items;
+	size_t len;
+	size_t cap;
+} Headers;
+
 typedef struct RevrRequest {
 	HttpMethod method;
 	char path[PATH_MAX];
 	char* version;
+	Headers headers;
 } RevrRequest;
 
 typedef struct RevrResponse {
 	int status_code;
 	const char* content_type;
 	size_t content_length;
-	const void* body;
+	Headers headers;
 
+	const void* body;
 	bool owns_body;
 } RevrResponse;
 

@@ -149,16 +149,12 @@ void server_accept_connection(RevrApp* app, int sockfd) {
 		recv(new_fd, request_str, 1024, 0);
 		printf("Received: \n%s\n", request_str);
 
-		RevrRequest req;
+		RevrRequest req = {0};
 		int status = http_parse_request(request_str, &req);
 
-		RevrResponse res;
+		RevrResponse res = {0};
 		if (status == -1) {
-			res.status_code = 400;
-			res.content_type = "text/plain";
-			res.body = "Bad Request";
-			res.content_length = strlen(res.body);
-			res.owns_body = false;
+			http_bad_request(&res);
 		} else {
 			route_dispatch(app, &req, &res);
 		}
@@ -181,6 +177,8 @@ void server_accept_connection(RevrApp* app, int sockfd) {
 			total += n;
 		}
 
+		http_free_req(&req);
+		http_free_res(&res);
 		free(response_str);
 
 		// TODO: THink about this.

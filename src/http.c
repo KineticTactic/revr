@@ -23,9 +23,13 @@ int http_parse_request(char *raw, RevrRequest *request) {
 	char *line_ptr;
 	char *field_ptr;
 
-	char *request_line = strtok_r(raw, "\r\n", &line_ptr);
+	char *body = strstr(raw, "\r\n\r\n");
+	*body = '\0';
+	body += 4;
 
-	char *method = strtok_r(request_line, " ", &field_ptr);
+	char *line = strtok_r(raw, "\r\n", &line_ptr);
+
+	char *method = strtok_r(line, " ", &field_ptr);
 	char *path = strtok_r(NULL, " ", &field_ptr);
 	char *version = strtok_r(NULL, " ", &field_ptr);
 
@@ -51,21 +55,76 @@ int http_parse_request(char *raw, RevrRequest *request) {
 	printf("Query: %s\n", query);
 	printf("Version: %s\n", version);
 
+	// Parse headers
+	printf("Header start\n");
+	while ((line = strtok_r(NULL, "\r\n", &line_ptr)) != NULL) {
+		char *colon = strchr(line, ':');
+
+		if (!colon)
+			return -1;
+
+		*colon = '\0';
+
+		char *name = line;
+		char *value = colon + 1;
+
+		while (*value == ' ' || *value == '\t') {
+			value++;
+		}
+
+		Header header = {
+		    .name = name,
+		    .value = value,
+		};
+
+		printf("%s, %s\n", name, value);
+		da_append(request->headers, header);
+	}
+	printf("Header end\n");
+
 	return 0;
+}
+
+void http_free_req(RevrRequest *req) { free(req->headers.items); }
+
+void http_free_res(RevrResponse *res) {
+	for (size_t i = 0; i < res->headers.len; i++) {
+		free(res->headers.items[i].name);
+		free(res->headers.items[i].value);
+	}
+
+	free(res->headers.items);
+
+	if (res->owns_body) {
+		free((void *)res->body);
+	}
 }
 
 char *http_generate_response(const RevrResponse *response) {
 	const char *reason = response->status_code == 200 ? "OK" : response->body;
 
-	size_t capacity = sizeof(char) * 512;
+	size_t capacity = 256;
+
+	for (size_t i = 0; i < response->headers.len; i++) {
+		capacity += strlen(response->headers.items[i].name);
+		capacity += strlen(response->headers.items[i].value);
+		capacity += 4; // ": " + "\r\n"
+	}
 	char *response_str = malloc(capacity + 1);
-	snprintf(response_str, capacity + 1,
-	         "HTTP/1.0 %d %s\r\n"
-	         "Content-Type: %s\r\n"
-	         "Content-Length: %zu\r\n"
-	         "\r\n",
-	         response->status_code, reason, response->content_type,
-	         response->content_length);
+	char *p = response_str;
+
+	p += sprintf(p,
+	             "HTTP/1.0 %d %s\r\n"
+	             "Content-Type: %s\r\n"
+	             "Content-Length: %zu\r\n",
+	             response->status_code, reason, response->content_type,
+	             response->content_length);
+
+	for (size_t i = 0; i < response->headers.len; i++) {
+		p += sprintf(p, "%s: %s\r\n", response->headers.items[i].name,
+		             response->headers.items[i].value);
+	}
+	sprintf(p, "\r\n");
 
 	return response_str;
 }

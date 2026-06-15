@@ -109,3 +109,28 @@ void revr_send_bad_gateway(RevrResponse *res) { http_bad_gateway(res); }
 void revr_send_service_unavailable(RevrResponse *res) {
 	http_service_unavailable(res);
 }
+
+const char *revr_req_header(RevrRequest *req, const char *name) {
+	for (int i = 0; i < req->headers.len; i++) {
+		if (strcmp(name, req->headers.items[i].name) == 0)
+			return req->headers.items[i].value;
+	}
+	return NULL;
+}
+
+void revr_res_header(RevrResponse *res, const char *name, const char *value) {
+	for (int i = 0; i < res->headers.len; i++) {
+		if (strcmp(name, res->headers.items[i].name) == 0) {
+			free(res->headers.items[i].value);
+			res->headers.items[i].value = strdup(value);
+			return;
+		}
+	}
+
+	Header header = {
+	    .name = strdup(name),
+	    .value = strdup(value),
+	};
+
+	da_append(res->headers, header);
+}

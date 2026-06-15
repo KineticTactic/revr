@@ -7,6 +7,9 @@ typedef struct file_content file_content;
 int http_parse_request(char* req, RevrRequest* request);
 char* http_generate_response(const RevrResponse* response);
 
+void http_free_req(RevrRequest* req);
+void http_free_res(RevrResponse* res);
+
 void http_send_file(RevrResponse *res, file_content *content);
 
 void http_ok(RevrResponse *res);
