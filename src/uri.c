@@ -1,6 +1,7 @@
 #include "uri.h"
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Source - https://stackoverflow.com/a/4770992
@@ -89,5 +90,36 @@ void remove_dot_segments(char *in, char *out) {
 				in = slash;
 			}
 		}
+	}
+}
+
+void uri_parse_query(char *in, QueryParams *queries) {
+	char *pair;
+	char *saveptr;
+
+	pair = strtok_r(in, "&", &saveptr);
+
+	while (pair) {
+		char *eq = strchr(pair, '=');
+		char *key, *value;
+
+		if (eq) {
+			*eq = '\0';
+
+			key = pair;
+			value = eq + 1;
+		} else {
+			key = pair;
+			value = "";
+		}
+
+		QueryParam query = {
+		    .name = key,
+		    .value = value,
+		};
+
+		da_append((*queries), query);
+
+		pair = strtok_r(NULL, "&", &saveptr);
 	}
 }

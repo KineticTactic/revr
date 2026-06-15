@@ -48,6 +48,7 @@ int http_parse_request(char *raw, RevrRequest *request) {
 	request->method = http_parse_method(method);
 	uri_decode(path);
 	remove_dot_segments(path, request->path);
+	uri_parse_query(query, &request->queries);
 	request->version = version;
 
 	printf("Method: %s\n", method);

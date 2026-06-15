@@ -46,3 +46,4 @@ void revr_send_service_unavailable(RevrResponse *res);
 
 const char *revr_req_header(RevrRequest *req, const char *name);
 void revr_res_header(RevrResponse *res, const char *name, const char *value);
+const char* revr_req_query(RevrRequest* req, const char* key);

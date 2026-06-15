@@ -27,6 +27,21 @@ void headers(RevrRequest *req, RevrResponse *res) {
 	revr_send_text(res, 200, "Check terminal output and response headers.");
 }
 
+void query(RevrRequest *req, RevrResponse *res) {
+	const char *id = revr_req_query(req, "id");
+	const char *name = revr_req_query(req, "name");
+
+	printf("id   = %s\n", id ? id : "(null)");
+	printf("name = %s\n", name ? name : "(null)");
+
+	char buffer[256];
+
+	snprintf(buffer, sizeof(buffer), "id=%s\nname=%s\n", id ? id : "(null)",
+	         name ? name : "(null)");
+
+	revr_send_text(res, 200, buffer);
+}
+
 int main() {
 	RevrApp *app = revr_app_create();
 
@@ -34,6 +49,7 @@ int main() {
 	revr_get(app, "/hi", hi);
 	revr_get(app, "/report", report);
 	revr_get(app, "/headers", headers);
+	revr_get(app, "/query", query);
 
 	int status = revr_static(app, "/", "./examples/static_website");
 	if (status != REVR_OK) {

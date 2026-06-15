@@ -42,11 +42,15 @@ typedef struct {
 	size_t cap;
 } Headers;
 
+typedef Header QueryParam;
+typedef Headers QueryParams;
+
 typedef struct RevrRequest {
 	HttpMethod method;
 	char path[PATH_MAX];
 	char* version;
 	Headers headers;
+	QueryParams queries;
 } RevrRequest;
 
 typedef struct RevrResponse {

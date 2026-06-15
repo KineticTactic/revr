@@ -73,8 +73,8 @@ cmake --install build --prefix /usr/local
 - [x] Standard status code helpers
 - [ ] Middleware
 - [ ] Route parameters
-- [ ] Query parsing
-- [ ] Request headers
+- [x] Query parsing
+- [x] Request headers
 - [ ] POST body support
 - [ ] Keep-Alive
 - [ ] Thread pool

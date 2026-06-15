@@ -134,3 +134,12 @@ void revr_res_header(RevrResponse *res, const char *name, const char *value) {
 
 	da_append(res->headers, header);
 }
+
+const char* revr_req_query(RevrRequest* req, const char* key) {
+	for (int i = 0; i < req->queries.len; i++) {
+		if (strcmp(key, req->queries.items[i].name) == 0) {
+			return req->queries.items[i].value;
+		}
+	}
+	return NULL;	
+}
